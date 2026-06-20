@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Claim Intelligence</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#09090b',
+                        surface: 'rgba(24, 24, 27, 0.65)',
+                        border: 'rgba(255, 255, 255, 0.1)',
+                        primary: '#6d28d9',
+                        secondary: '#0ea5e9',
+                        success: '#22c55e',
+                        danger: '#ef4444',
+                        warning: '#eab308'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #09090b; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass-card {
+            background: var(--surface, rgba(24, 24, 27, 0.65));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+            border-radius: 1rem;
+        }
+        .glow-bg {
+            position: fixed; top: -20%; left: -10%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(109,40,217,0.15) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(60px); z-index: -1;
+        }
+        .glow-bg-2 {
+            position: fixed; bottom: -20%; right: -10%; width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(14,165,233,0.1) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(60px); z-index: -1;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen relative p-6">
+    <div class="glow-bg"></div>
+    <div class="glow-bg-2"></div>
+
+    <div class="max-w-7xl mx-auto space-y-8">
+        <!-- Header -->
+        <header class="flex justify-between items-end border-b border-white/10 pb-6">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">AI Claim Investigator</h1>
+                <p class="text-gray-400 mt-2 text-sm">Multi-Modal Evidence Review Platform</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <input type="file" id="csv-upload" class="hidden" accept=".csv" />
+                <button id="upload-btn" onclick="document.getElementById('csv-upload').click()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-sm font-bold rounded-lg shadow-[0_0_15px_rgba(109,40,217,0.4)] transition transform hover:scale-105 flex items-center gap-2">
+                    📁 Upload Dataset
+                </button>
+                <div class="text-sm text-gray-500">System Status: <span class="text-green-400 font-medium">Online</span></div>
+            </div>
+        </header>
+
+        <!-- 1. Claims Overview -->
+        <section>
+            <h2 class="text-xl font-semibold mb-4">Claims Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="overview-cards">
+                <!-- Populated via JS -->
+            </div>
+            
+            <div class="mt-6 glass-card p-6 overflow-x-auto">
+                <h3 class="text-lg font-semibold mb-4 text-gray-200">Recent Claims Analysis</h3>
+                <table id="claims-table" class="w-full text-left text-sm text-gray-400">
+                    <thead class="text-xs text-gray-500 uppercase bg-white/5">
+                        <tr>
+                            <th class="px-4 py-3 rounded-tl-lg">Claim ID</th>
+                            <th class="px-4 py-3">User ID</th>
+                            <th class="px-4 py-3">Text</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 rounded-tr-lg">Severity</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/10">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Live Claim & Explorer -->
+            <div class="col-span-2 space-y-6">
+                <!-- 2. Live Claim Review & 4. Evidence Explorer -->
+                <section class="glass-card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">Live Evidence Explorer</h2>
+                        <a href="/dashboard/replay.html?claim_id=c0" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-sm font-bold rounded-lg shadow-[0_0_15px_rgba(109,40,217,0.4)] transition transform hover:scale-105 flex items-center gap-2">
+                            ▶ Replay Investigation
+                        </a>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div id="threejs-container" class="w-full md:w-1/2 bg-black/50 rounded-lg overflow-hidden border border-white/5 relative h-64 flex items-center justify-center group cursor-pointer">
+                            <span id="threejs-loading" class="text-gray-500 group-hover:text-white transition relative z-10 pointer-events-none">Interactive 3D Viewer</span>
+                        </div>
+                        <div class="w-full md:w-1/2 space-y-4">
+                            <div class="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span class="text-gray-400">Coverage Score</span>
+                                <span class="font-bold text-green-400">95 / 100</span>
+                            </div>
+                            <div class="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span class="text-gray-400">Contradiction</span>
+                                <span class="font-bold text-red-400">Detected</span>
+                            </div>
+                            <div class="flex justify-between items-center pb-2 border-b border-white/10">
+                                <span class="text-gray-400">Final Verdict</span>
+                                <span class="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold uppercase">Contradicted</span>
+                            </div>
+                            <div class="text-sm text-gray-400 mt-4">
+                                <p><strong>Missing Evidence:</strong> N/A</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Fraud Intelligence Center -->
+                <section class="glass-card p-6">
+                    <h2 class="text-xl font-semibold mb-4">Fraud Intelligence Center</h2>
+                    <div class="h-64 flex items-center justify-center border border-white/5 bg-black/30 rounded-lg p-4 relative">
+                        <canvas id="fraudChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Knowledge Graph -->
+                <section class="glass-card p-6">
+                    <h2 class="text-xl font-semibold mb-4">Investigation Knowledge Graph</h2>
+                    <div id="graph-container" class="w-full h-80 border border-white/5 bg-black/30 rounded-lg relative overflow-hidden">
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: AI Panel -->
+            <div class="space-y-6">
+                <!-- 5. AI Investigator Panel -->
+                <section class="glass-card p-6 h-full">
+                    <h2 class="text-xl font-semibold mb-4">AI Investigator Panel</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                            <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Claim Understanding</h3>
+                            <div class="text-sm font-mono text-blue-300">{"object": "laptop", "damage": "crack"}</div>
+                        </div>
+                        
+                        <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                            <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Multi-Agent Debate Trace</h3>
+                            <div class="text-sm text-gray-300 space-y-2">
+                                <p><span class="text-green-400 font-semibold">Agent A:</span> Visual evidence supports the crack claim.</p>
+                                <p><span class="text-red-400 font-semibold">Agent B:</span> However, authenticity score is 30. Tampering detected.</p>
+                                <p><span class="text-purple-400 font-semibold">Final Judge:</span> Contradicted due to image tampering.</p>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                            <h3 class="text-xs font-bold text-purple-400 uppercase mb-2">Investigator Summary</h3>
+                            <p class="text-sm text-gray-200">The claim for a cracked laptop screen is contradicted. While the damage matches the text, perceptual hashing flagged the image as previously submitted (duplicate).</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/dashboard/script.js"></script>
+    <script>
+        // Initialize Chart.js for Fraud Intelligence Center
+        const ctx = document.getElementById('fraudChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Low Risk (0-30)', 'Med Risk (31-70)', 'High Risk (71-100)'],
+                datasets: [{
+                    label: 'Fraud Score Distribution',
+                    data: [25, 12, 5],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.6)',
+                        'rgba(234, 179, 8, 0.6)',
+                        'rgba(239, 68, 68, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(234, 179, 8, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: 'rgba(255,255,255,0.6)' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: 'rgba(255,255,255,0.6)' }
+                    }
+                }
+            }
+        });
+
+        // Mock data loading
+        const cards = [
+            { title: 'Total Claims', value: '42', color: 'text-white' },
+            { title: 'Supported', value: '28', color: 'text-green-400' },
+            { title: 'Contradicted', value: '10', color: 'text-red-400' },
+            { title: 'Insufficient Evidence', value: '4', color: 'text-yellow-400' }
+        ];
+        
+        const container = document.getElementById('overview-cards');
+        cards.forEach(c => {
+            container.innerHTML += `
+                <div class="glass-card p-5">
+                    <h3 class="text-sm text-gray-400 font-medium">${c.title}</h3>
+                    <p class="text-3xl font-bold mt-2 ${c.color}">${c.value}</p>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

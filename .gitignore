@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.zip
+venv/
+Submission/
+dataset/
+logs/
+outputs/

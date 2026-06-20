@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+:root {
+    --bg-color: #050505;
+    --card-bg: rgba(20, 20, 22, 0.65);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text-primary: #f5f5f7;
+    --text-secondary: #a1a1a6;
+    --accent-primary: #8a2be2;
+    --accent-secondary: #00d2ff;
+    --accent-danger: #ff2a55;
+    --accent-success: #32d74b;
+    --accent-warning: #ffd60a;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* Dynamic Animated Background */
+.background-gradients {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    background: #050505;
+}
+
+.glow {
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.4;
+    animation: float 12s infinite ease-in-out alternate;
+}
+
+.glow.red {
+    background: radial-gradient(circle, var(--accent-primary), transparent 60%);
+    top: -300px;
+    left: -200px;
+}
+
+.glow.blue {
+    background: radial-gradient(circle, var(--accent-secondary), transparent 60%);
+    bottom: -300px;
+    right: -200px;
+    animation-delay: -6s;
+}
+
+@keyframes float {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(150px, 100px) scale(1.1); }
+}
+
+/* Layout */
+.dashboard-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 60px;
+    animation: fadeInDown 1s ease forwards;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
+}
+
+.highlight {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+header p {
+    color: var(--text-secondary);
+    font-size: 1.25rem;
+    font-weight: 300;
+}
+
+/* Grid & Cards */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 24px;
+    padding: 35px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent);
+    transform: skewX(-20deg);
+    transition: 0.5s;
+}
+
+.card:hover::before {
+    left: 200%;
+}
+
+.card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.stat-card h3 {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.stat-card .value {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    text-shadow: 0 0 20px rgba(255,255,255,0.1);
+}
+
+.stat-card .subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+/* Loading animation */
+.loading {
+    position: relative;
+    color: transparent !important;
+}
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 60%;
+    height: 24px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    background-size: 200% 100%;
+    animation: skeleton 1.5s infinite linear;
+    border-radius: 6px;
+}
+
+@keyframes skeleton {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+/* Table Section */
+.recent-claims {
+    padding: 40px;
+}
+
+.recent-claims h3 {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+th, td {
+    padding: 20px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--card-border);
+}
+
+th {
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+tbody tr {
+    transition: all 0.3s ease;
+}
+
+tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    transform: scale(1.01);
+}
+
+td:first-child, th:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+td:last-child, th:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* Status Badges */
+.status {
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: inline-block;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.status.supported { background: rgba(50, 215, 75, 0.15); color: var(--accent-success); border: 1px solid rgba(50, 215, 75, 0.3); }
+.status.contradicted { background: rgba(255, 42, 85, 0.15); color: var(--accent-danger); border: 1px solid rgba(255, 42, 85, 0.3); }
+.status.insufficient { background: rgba(255, 214, 10, 0.15); color: var(--accent-warning); border: 1px solid rgba(255, 214, 10, 0.3); }
+
+/* Graph Section */
+.graph-section {
+    padding: 40px;
+}
+
+.graph-section h3 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+#graph-container {
+    border-radius: 16px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    border: 1px solid var(--card-border);
+}

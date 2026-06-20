@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Investigator Replay™</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#09090b',
+                        surface: 'rgba(24, 24, 27, 0.75)',
+                        border: 'rgba(255, 255, 255, 0.1)',
+                        primary: '#6d28d9',
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #09090b; color: #f8fafc; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .glass-card {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+        }
+        .glow-bg {
+            position: fixed; top: 50%; left: 50%; width: 60vw; height: 60vw;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, rgba(109,40,217,0.1) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(80px); z-index: -1;
+        }
+        /* Graph UI */
+        .node {
+            width: 180px; height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.5); opacity: 0.3;
+            transition: all 0.3s ease; position: relative;
+        }
+        .node.active { opacity: 1; border-color: #6d28d9; box-shadow: 0 0 15px rgba(109,40,217,0.5); }
+        .node.success { border-color: #22c55e; }
+        .node.warning { border-color: #eab308; }
+        .node.failure { border-color: #ef4444; }
+        
+        .edge {
+            width: 2px; height: 30px; background: rgba(255,255,255,0.2); margin: 0 auto;
+        }
+        .edge.active { background: #6d28d9; box-shadow: 0 0 10px #6d28d9; }
+        
+        /* Chat bubbles */
+        .chat-bubble { max-width: 80%; padding: 12px; border-radius: 12px; margin-bottom: 8px; opacity: 0; transform: translateY(10px); }
+        .chat-a { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); align-self: flex-start; }
+        .chat-b { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); align-self: flex-end; text-align: right; }
+        .chat-c { background: rgba(109, 40, 217, 0.1); border: 1px solid rgba(109, 40, 217, 0.3); align-self: center; text-align: center; width: 100%; }
+
+        /* Progress meter */
+        .meter-fill { width: 0%; transition: width 1s ease-in-out; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+    <div class="glow-bg"></div>
+    
+    <!-- Top Bar -->
+    <header class="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 z-10">
+        <div class="flex items-center gap-4">
+            <a href="/dashboard/index.html" class="text-gray-400 hover:text-white">← Back</a>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Claim Investigator Replay™</h1>
+            <span class="px-2 py-1 bg-white/10 rounded text-xs text-gray-300 font-mono" id="claim-id-display">Loading...</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="setSpeed(1)" class="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-sm transition">1x Step</button>
+            <button onclick="setSpeed(0.2)" class="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-sm transition">10x Fast</button>
+            <button onclick="autoPlay()" id="play-btn" class="px-4 py-1 bg-purple-600 hover:bg-purple-500 rounded text-sm font-bold shadow-[0_0_15px_rgba(109,40,217,0.5)] transition">▶ Auto Replay</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left: DAG Visualization -->
+        <div class="w-1/3 border-r border-white/10 p-6 overflow-y-auto flex flex-col items-center hide-scrollbar" id="dag-container">
+            <!-- Nodes injected via JS -->
+        </div>
+
+        <!-- Center: Cinematic Viewport -->
+        <div class="w-2/3 p-8 flex flex-col relative">
+            <h2 class="text-2xl font-bold text-gray-200 mb-6" id="step-title">Initialization</h2>
+            
+            <div class="flex-1 glass-card p-8 flex flex-col items-center justify-center relative overflow-hidden" id="viewport">
+                <div class="text-gray-500 animate-pulse text-lg" id="waiting-text">Awaiting Playback...</div>
+                
+                <!-- Dynamic Content Containers -->
+                <div id="content-container" class="w-full h-full flex flex-col items-center justify-center hidden"></div>
+            </div>
+
+            <!-- Footer Timeline -->
+            <div class="h-16 mt-6 border-t border-white/10 flex items-center gap-2">
+                <div class="text-xs text-gray-500 font-mono">TIMELINE:</div>
+                <div class="flex-1 h-2 bg-white/5 rounded-full overflow-hidden relative">
+                    <div id="timeline-progress" class="absolute top-0 left-0 h-full bg-purple-500 w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const claimId = urlParams.get('claim_id') || 'c0';
+        document.getElementById('claim-id-display').textContent = claimId;
+
+        let replayData = null;
+        let currentStep = 0;
+        let speed = 2; // seconds per step
+        let isPlaying = false;
+        let intervalId = null;
+
+        const dagContainer = document.getElementById('dag-container');
+        const viewport = document.getElementById('content-container');
+        const stepTitle = document.getElementById('step-title');
+        const waitingText = document.getElementById('waiting-text');
+        const timelineProgress = document.getElementById('timeline-progress');
+
+        // Fetch data
+        async function fetchReplay() {
+            try {
+                const res = await fetch(`/api/replay/${claimId}`);
+                if (!res.ok) throw new Error("Failed to fetch");
+                replayData = await res.json();
+                if(replayData.error) throw new Error(replayData.error);
+                
+                buildDAG();
+            } catch (err) {
+                waitingText.textContent = "Error loading replay: " + err.message;
+                waitingText.classList.remove('animate-pulse');
+                waitingText.classList.add('text-red-400');
+            }
+        }
+
+        function buildDAG() {
+            waitingText.textContent = "Press Play to Begin Investigation";
+            waitingText.classList.remove('animate-pulse');
+            
+            dagContainer.innerHTML = '';
+            replayData.nodes.forEach((node, i) => {
+                const div = document.createElement('div');
+                div.className = 'node text-sm font-medium tracking-wide';
+                div.id = `node-${i}`;
+                div.innerHTML = node.name;
+                dagContainer.appendChild(div);
+
+                if (i < replayData.nodes.length - 1) {
+                    const edge = document.createElement('div');
+                    edge.className = 'edge';
+                    edge.id = `edge-${i}`;
+                    dagContainer.appendChild(edge);
+                }
+            });
+        }
+
+        function setSpeed(s) { speed = s; }
+
+        function autoPlay() {
+            if (isPlaying) return;
+            if (!replayData) return;
+            isPlaying = true;
+            document.getElementById('play-btn').textContent = "Playing...";
+            waitingText.classList.add('hidden');
+            viewport.classList.remove('hidden');
+            
+            currentStep = 0;
+            renderStep();
+        }
+
+        function renderStep() {
+            if (currentStep >= replayData.nodes.length) {
+                isPlaying = false;
+                document.getElementById('play-btn').textContent = "Replay Complete";
+                return;
+            }
+
+            const node = replayData.nodes[currentStep];
+            
+            // Update DAG
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+            const activeNode = document.getElementById(`node-${currentStep}`);
+            activeNode.classList.add('active');
+            
+            // Color code based on status
+            if (node.status === 'Success') activeNode.classList.add('success');
+            else if (node.status === 'Warning') activeNode.classList.add('warning');
+            else if (node.status === 'Failure') activeNode.classList.add('failure');
+
+            if (currentStep > 0) {
+                document.getElementById(`edge-${currentStep-1}`).classList.add('active');
+            }
+
+            // Update Progress
+            timelineProgress.style.transitionDuration = `${speed * 1000}ms`;
+            timelineProgress.style.transitionTimingFunction = "linear";
+            timelineProgress.style.width = `${((currentStep + 1) / replayData.nodes.length) * 100}%`;
+
+            // Update Viewport
+            stepTitle.textContent = `Step ${currentStep + 1}: ${node.name}`;
+            
+            // Build Cinematic Content
+            buildCinematicContent(node);
+
+            currentStep++;
+            intervalId = setTimeout(renderStep, speed * 1000);
+        }
+
+        function buildCinematicContent(node) {
+            viewport.innerHTML = '';
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'w-full max-w-2xl text-left space-y-6';
+
+            if (node.id === 'agent1') {
+                wrapper.innerHTML = `
+                    <div class="p-6 bg-white/5 border border-white/10 rounded-xl">
+                        <h3 class="text-sm text-gray-400 mb-2">Claim Text</h3>
+                        <p class="text-xl font-medium text-white mb-6">"${node.inputs.text}"</p>
+                        
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="p-4 bg-black/40 rounded-lg">
+                                <span class="text-xs text-gray-500 block">Extracted Object</span>
+                                <span class="text-lg text-blue-400 font-bold" id="anim-obj">...</span>
+                            </div>
+                            <div class="p-4 bg-black/40 rounded-lg">
+                                <span class="text-xs text-gray-500 block">Claimed Damage</span>
+                                <span class="text-lg text-red-400 font-bold" id="anim-dmg">...</span>
+                            </div>
+                            <div class="p-4 bg-black/40 rounded-lg">
+                                <span class="text-xs text-gray-500 block">Object Part</span>
+                                <span class="text-lg text-purple-400 font-bold" id="anim-part">...</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                viewport.appendChild(wrapper);
+                
+                // GSAP Animations
+                setTimeout(() => {
+                    document.getElementById('anim-obj').textContent = node.outputs.object_type;
+                    document.getElementById('anim-dmg').textContent = node.outputs.claimed_damage;
+                    document.getElementById('anim-part').textContent = node.outputs.object_part;
+                    gsap.from("#anim-obj, #anim-dmg, #anim-part", {y: 20, opacity: 0, duration: 0.5, stagger: 0.2});
+                }, 500);
+            } 
+            else if (node.id === 'agent5') { // Coverage
+                const score = node.outputs.coverage_score;
+                wrapper.innerHTML = `
+                    <div class="text-center">
+                        <h3 class="text-2xl mb-8">Visual Evidence Coverage</h3>
+                        <div class="w-full h-8 bg-black/50 rounded-full border border-white/10 overflow-hidden relative">
+                            <div class="h-full bg-gradient-to-r ${score >= 50 ? 'from-green-600 to-green-400' : 'from-red-600 to-red-400'} meter-fill" id="coverage-meter"></div>
+                        </div>
+                        <p class="mt-4 text-3xl font-bold text-white">${score} / 100</p>
+                        <p class="mt-2 text-gray-400">${score >= 50 ? 'Sufficient Visibility' : 'Missing Evidence: ' + node.outputs.required_next_image}</p>
+                    </div>
+                `;
+                viewport.appendChild(wrapper);
+                setTimeout(() => {
+                    document.getElementById('coverage-meter').style.width = `${score}%`;
+                }, 100);
+            }
+            else if (node.id === 'agent89') { // Debate
+                wrapper.innerHTML = `
+                    <div class="flex flex-col space-y-4" id="chat-container">
+                        <div class="chat-bubble chat-a"><strong>Agent A (Support):</strong> The claim aligns with the damage detected (${node.inputs.contradiction.contradicted ? 'but' : 'and'}) visual coverage is ${node.inputs.coverage.coverage_score}.</div>
+                        <div class="chat-bubble chat-b"><strong>Agent B (Challenger):</strong> Risk flags indicate a history score of ${node.inputs.risk.history_risk_score}. Contradiction status is ${node.inputs.contradiction.contradicted}.</div>
+                        <div class="chat-bubble chat-c mt-8">
+                            <h2 class="text-3xl font-black uppercase text-white tracking-widest">${node.outputs.claim_status}</h2>
+                            <p class="text-sm mt-2 text-gray-300">${node.outputs.claim_status_justification}</p>
+                        </div>
+                    </div>
+                `;
+                viewport.appendChild(wrapper);
+                gsap.to(".chat-bubble", {y: 0, opacity: 1, duration: 0.5, stagger: 0.8});
+            }
+            else {
+                // Generic node fallback
+                wrapper.innerHTML = `
+                    <div class="p-6 bg-black/40 border border-white/10 rounded-xl">
+                        <h3 class="text-lg font-bold text-white mb-4 border-b border-white/10 pb-2">Analysis Outputs</h3>
+                        <pre class="text-xs text-green-400 font-mono overflow-auto max-h-64 whitespace-pre-wrap">${JSON.stringify(node.outputs, null, 2)}</pre>
+                        <div class="mt-6 flex justify-end">
+                            <span class="px-3 py-1 rounded text-xs font-bold uppercase ${node.status === 'Success' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${node.status}</span>
+                        </div>
+                    </div>
+                `;
+                viewport.appendChild(wrapper);
+                gsap.from(wrapper, {scale: 0.95, opacity: 0, duration: 0.4});
+            }
+        }
+
+        fetchReplay();
+    </script>
+</body>
+</html>

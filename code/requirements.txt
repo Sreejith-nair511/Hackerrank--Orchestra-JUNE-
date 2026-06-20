@@ -1,0 +1,12 @@
+fastapi==0.103.2
+uvicorn==0.23.2
+groq==0.4.2
+chromadb==0.4.15
+supabase==1.2.0
+transformers==4.35.0
+torch==2.1.0
+pillow==10.1.0
+pandas==2.1.1
+imagehash==4.3.1
+pydantic==2.4.2
+python-dotenv==1.0.0
